@@ -2,53 +2,57 @@
 #include <stdlib.h>
 
 Bloco* gerarBlocos(int level) {
-    Bloco *head = NULL; 
-    int numLinhas = 5;
+    Bloco *head = NULL;
+
+    int numLinhas = 3 + (level - 1);
+    if (numLinhas > 9) numLinhas = 9;
+
     int numColunas = 10;
 
     for (int i = 0; i < numLinhas; i++) {
         for (int j = 0; j < numColunas; j++) {
-            
+
             Bloco *novoBloco = (Bloco*) malloc(sizeof(Bloco));
 
-            novoBloco->rect.x = j * 80 + 10;  //isso veio implicito na biblioteca raylib
-            novoBloco->rect.y = i * 30 + 50; 
-            novoBloco->rect.width = 75;
-            novoBloco->rect.height = 25;
-            novoBloco->ativo = true;
-            novoBloco->vida = 1 + level;
-            novoBloco->tipo = 1;
+            novoBloco->rect = (Rectangle){
+                j * 80 + 5,
+                i * 30 + 40,
+                75,
+                20
+            };
 
-      
+            novoBloco->vida = 1;
+            novoBloco->ativo = true;
+            novoBloco->tipo = (i % 5) + 1;
+
             novoBloco->prox = head;
             head = novoBloco;
         }
     }
+
     return head;
 }
 
 void destruirLista(Bloco *head) {
-Bloco *atual = head;
+    Bloco *atual = head;
     Bloco *proximo;
 
     while (atual != NULL) {
-        proximo = atual->prox; // Guarda o endereço do próximo antes de destruir o atual
-        free(atual);           // Devolve o "quarto" (memória) para o sistema
-        atual = proximo;       // Avança para o próximo
+        proximo = atual->prox;
+        free(atual);
+        atual = proximo;
     }
 }
 
 bool todosBlocosDestruidos(Bloco *head) {
     Bloco *atual = head;
-    
+
     while (atual != NULL) {
-        // Se encontrar APENAS UM bloco que ainda esteja ativo (vivo)...
         if (atual->ativo == true) {
-            return false; // ...então o nível NÃO acabou.
+            return false;
         }
-        atual = atual->prox; // Continua procurando
+        atual = atual->prox;
     }
-    
-    // Se passou por todos e não retornou false, é porque todos morreram.
-    return true; 
+
+    return true;
 }
