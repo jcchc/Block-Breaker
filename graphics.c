@@ -1,8 +1,8 @@
 #include "raylib.h"
 #include "graphics.h"   // Header principal
 #include "blocks.h"     // Header REAL 
-#include "player_fake.h"// Header FAKE (temporário) ⚠️
-#include "ball_fake.h"  // Header FAKE (temporário) ⚠️
+#include "player_fake.h"
+#include "ball_fake.h"
 #include <stdlib.h>     // Para GetRandomValue
 
 const int screenWidth = 900;
