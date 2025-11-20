@@ -1,149 +1,104 @@
-#include "raylib.h"
-#include <stdio.h>
+#include "game_logic.h"
+#include <stdlib.h> // Para NULL
 
-// --------------------------------------------------
-// Estruturas principais (podem ser separadas em outros arquivos depois)
-// --------------------------------------------------
-
-typedef struct {
-    Vector2 posicao;
-    Vector2 velocidade;
-    float raio;
-    bool ativa;
-} Bola;
-
-typedef struct {
-    Vector2 posicao;
-    Vector2 tamanho;
-    float velocidade;
-} Raquete;
-
-// --------------------------------------------------
-// Variáveis globais do jogo
-// --------------------------------------------------
-
-const int LARGURA_TELA = 800;
-const int ALTURA_TELA = 600;
-
+// Definição das variáveis globais
 int pontuacao = 0;
 int nivel = 1;
 bool jogoFinalizado = false;
-bool pausado = false;
 
-// --------------------------------------------------
-// Protótipos das funções
-// --------------------------------------------------
+// Constantes locais (para saber onde bater)
+const int LARGURA_TELA = 800;
+const int ALTURA_TELA = 600;
 
-void AtualizarJogo(Bola *bola, Raquete *raquete, float *dificuldade);
-void ReiniciarJogo(Bola *bola, Raquete *raquete);
-void DesenharJogo(Bola bola, Raquete raquete, float dificuldade);
+void IniciarJogo(Player *player, Ball *ball, Bloco **listaBlocos) {
+    // Reseta o Player
+    player->rect = (Rectangle){ LARGURA_TELA/2 - 50, ALTURA_TELA - 40, 100, 20 };
+    player->velocidade = 7.0f;
+    player->vidas = 3;
 
-// --------------------------------------------------
-// Função principal (main)
-// --------------------------------------------------
+    // Reseta a Bola
+    ball->posicao = (Vector2){ LARGURA_TELA/2, ALTURA_TELA/2 };
+    ball->velocidade = (Vector2){ 4.0f, -4.0f };
+    ball->raio = 8.0f;
+    ball->ativa = true;
 
-int main(void) {
-    InitWindow(LARGURA_TELA, ALTURA_TELA, "Block Breaker - Fase Única com Dificuldade Progressiva");
-    SetTargetFPS(60);
-
-    // Cria os objetos principais
-    Bola bola = { {LARGURA_TELA / 2, ALTURA_TELA / 2}, {4, -4}, 8, true };
-    Raquete raquete = { {LARGURA_TELA / 2 - 50, ALTURA_TELA - 30}, {100, 15}, 7 };
-
-    float dificuldade = 1.0f; // começa fácil
-
-    // Loop principal do jogo
-    while (!WindowShouldClose()) {
-        if (!jogoFinalizado && !pausado)
-            AtualizarJogo(&bola, &raquete, &dificuldade);
-
-        // Teclas de controle geral
-        if (IsKeyPressed(KEY_P)) pausado = !pausado;
-        if (IsKeyPressed(KEY_R)) ReiniciarJogo(&bola, &raquete);
-
-        // Desenho na tela
-        BeginDrawing();
-        ClearBackground(BLACK);
-
-        DesenharJogo(bola, raquete, dificuldade);
-
-        if (pausado)
-            DrawText("PAUSADO", LARGURA_TELA / 2 - 80, ALTURA_TELA / 2, 30, YELLOW);
-
-        if (jogoFinalizado)
-            DrawText("GAME OVER! Pressione R para Reiniciar", LARGURA_TELA / 2 - 200, ALTURA_TELA / 2, 20, RED);
-
-        EndDrawing();
-    }
-
-    CloseWindow();
-    return 0;
-}
-
-// --------------------------------------------------
-// Atualização da lógica principal do jogo
-// --------------------------------------------------
-
-void AtualizarJogo(Bola *bola, Raquete *raquete, float *dificuldade) {
-    // --- Movimento da raquete ---
-    if (IsKeyDown(KEY_LEFT) && raquete->posicao.x > 0)
-        raquete->posicao.x -= raquete->velocidade;
-    if (IsKeyDown(KEY_RIGHT) && raquete->posicao.x + raquete->tamanho.x < LARGURA_TELA)
-        raquete->posicao.x += raquete->velocidade;
-
-    // --- Movimento da bola ---
-    bola->posicao.x += bola->velocidade.x * (*dificuldade);
-    bola->posicao.y += bola->velocidade.y * (*dificuldade);
-
-    // --- Colisões com as bordas da tela ---
-    if (bola->posicao.x <= bola->raio || bola->posicao.x >= LARGURA_TELA - bola->raio)
-        bola->velocidade.x *= -1;
-
-    if (bola->posicao.y <= bola->raio)
-        bola->velocidade.y *= -1;
-
-    // --- Colisão com a raquete ---
-    if (CheckCollisionCircleRec(bola->posicao, bola->raio,
-                                (Rectangle){raquete->posicao.x, raquete->posicao.y, raquete->tamanho.x, raquete->tamanho.y})) {
-        bola->velocidade.y *= -1;
-        pontuacao += 10;
-    }
-
-    // --- Se a bola cair ---
-    if (bola->posicao.y > ALTURA_TELA) {
-        jogoFinalizado = true;
-    }
-
-    // --- Aumenta a dificuldade conforme a pontuação ---
-    if (pontuacao > 0 && pontuacao % 100 == 0) {
-        *dificuldade += 0.05f;
-        nivel++;
-    }
-}
-
-// --------------------------------------------------
-// Reinicia o jogo
-// --------------------------------------------------
-
-void ReiniciarJogo(Bola *bola, Raquete *raquete) {
-    bola->posicao = (Vector2){LARGURA_TELA / 2, ALTURA_TELA / 2};
-    bola->velocidade = (Vector2){4, -4};
-    raquete->posicao = (Vector2){LARGURA_TELA / 2 - 50, ALTURA_TELA - 30};
+    // Reseta o Jogo
     pontuacao = 0;
     nivel = 1;
     jogoFinalizado = false;
+
+    // Reseta e cria SEUS blocos
+    if (*listaBlocos != NULL) destruirLista(*listaBlocos);
+    *listaBlocos = gerarBlocos(nivel); // <--- Sua função brilhando aqui
 }
 
-// --------------------------------------------------
-// Desenha todos os elementos do jogo
-// --------------------------------------------------
+void AtualizarLogica(Player *player, Ball *ball, Bloco **listaBlocos) {
+    if (jogoFinalizado) return;
 
-void DesenharJogo(Bola bola, Raquete raquete, float dificuldade) {
-    DrawText("BLOCK BREAKER", LARGURA_TELA / 2 - 100, 10, 30, LIGHTGRAY);
-    DrawText(TextFormat("Pontuação: %d", pontuacao), 10, 50, 20, WHITE);
-    DrawText(TextFormat("Nível: %d", nivel), 10, 75, 20, WHITE);
-    DrawText(TextFormat("Dificuldade: %.2f", dificuldade), 10, 100, 20, WHITE);
+    // 1. Movimento da Raquete
+    if (IsKeyDown(KEY_LEFT) && player->rect.x > 0) 
+        player->rect.x -= player->velocidade;
+    if (IsKeyDown(KEY_RIGHT) && player->rect.x < LARGURA_TELA - player->rect.width) 
+        player->rect.x += player->velocidade;
 
-    DrawCircleV(bola.posicao, bola.raio, RAYWHITE);
-    DrawRectangleV(raquete.posicao, raquete.tamanho, BLUE);
+    // 2. Movimento da Bola
+    // Dificuldade progressiva: Aumenta velocidade com o nível
+    float multiplicador = 1.0f + (nivel * 0.1f);
+    ball->posicao.x += ball->velocidade.x * multiplicador;
+    ball->posicao.y += ball->velocidade.y * multiplicador;
+
+    // 3. Colisão Bola x Paredes
+    if (ball->posicao.x <= ball->raio || ball->posicao.x >= LARGURA_TELA - ball->raio)
+        ball->velocidade.x *= -1;
+    if (ball->posicao.y <= ball->raio)
+        ball->velocidade.y *= -1;
+
+    // 4. Colisão Bola x Raquete
+    if (CheckCollisionCircleRec(ball->posicao, ball->raio, player->rect)) {
+        ball->velocidade.y *= -1;
+        ball->posicao.y = player->rect.y - ball->raio - 1; // Desgruda
+    }
+
+    // 5. Colisão Bola x SEUS BLOCOS (Lista Encadeada)
+    Bloco *atual = *listaBlocos;
+    while (atual != NULL) {
+        if (atual->ativo) {
+            if (CheckCollisionCircleRec(ball->posicao, ball->raio, atual->rect)) {
+                ball->velocidade.y *= -1; // Rebate
+                atual->vida--;            // Tira vida
+                
+                if (atual->vida <= 0) {
+                    atual->ativo = false; // Mata bloco
+                    pontuacao += 100;     // Ganha ponto
+                }
+                break; // Bateu em um, sai do loop (evita bugs físicos)
+            }
+        }
+        atual = atual->prox; // Vai para o próximo nó da lista
+    }
+
+    // 6. Verificar Vitória de Nível
+    if (todosBlocosDestruidos(*listaBlocos)) {
+        nivel++;
+        // Limpa a lista velha e cria a nova (Rounds Infinitos)
+        destruirLista(*listaBlocos);
+        *listaBlocos = gerarBlocos(nivel);
+        
+        // Reseta a bola para o meio
+        ball->posicao = (Vector2){ LARGURA_TELA/2, ALTURA_TELA/2 };
+        ball->velocidade = (Vector2){ 4.0f, -4.0f }; // Reinicia direção
+    }
+
+    // 7. Verificar Derrota (Game Over)
+    if (ball->posicao.y > ALTURA_TELA) {
+        player->vidas--;
+        if (player->vidas <= 0) {
+            jogoFinalizado = true;
+            // Aqui entraria o salvarRanking() no futuro
+        } else {
+            // Perdeu vida, reseta bola
+            ball->posicao = (Vector2){ LARGURA_TELA/2, ALTURA_TELA/2 };
+            ball->velocidade = (Vector2){ 4.0f, -4.0f };
+        }
+    }
 }
