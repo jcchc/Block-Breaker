@@ -49,6 +49,7 @@ extern int nivel;
 extern int vidas; // Assumindo que player.vidas ou variável global vidas existe
 extern GameScreen currentState; // MENU, GAMEPLAY, etc.
 extern int fakeRankings[5]; // Se quiser manter o ranking fake
+extern float roundTimer; // NOVA VARIÁVEL EXTERNA PARA O TIMER DO ROUND
 
 // ---------------------------------------------------------
 //               FUNÇÕES INTERNAS (Auxiliares)
@@ -158,11 +159,31 @@ static void DrawGameplay(void) {
     // 4. Partículas
     UpdateDrawParticles();
 
-    // 5. HUD
+    // 5. HUD (Interface do Jogo)
     DrawText(TextFormat("SCORE: %d", pontuacao), 20, 20, 20, COR_DESTAQUE);
     DrawText(TextFormat("LEVEL: %d", nivel), 450 - 40, 20, 20, WHITE);
-    // Acessando vidas (assumindo que está na struct player ou global)
     DrawText(TextFormat("LIVES: %d", player.vidas), 900 - 120, 20, 20, RED);
+
+    // 6. OVERLAY DO ROUND (Aparece no início de cada round)
+    if (roundTimer > 0) {
+        // Desenha um fundo escurecido semi-transparente
+        DrawRectangle(0, 0, 900, 650, (Color){0, 0, 0, 180});
+        
+        // Prepara o texto "ROUND X"
+        const char *textoRound = TextFormat("ROUND %d", nivel);
+        int tamanhoFonte = 100;
+        
+        // Calcula a posição centralizada
+        int larguraTexto = MeasureTextEx(mainFont, textoRound, tamanhoFonte, 2).x;
+        int posX = (900 - larguraTexto) / 2;
+        int posY = 250;
+        
+        // Desenha sombra do texto (efeito de profundidade)
+        DrawTextEx(mainFont, textoRound, (Vector2){posX + 4, posY + 4}, tamanhoFonte, 2, BLACK);
+        
+        // Desenha o texto principal em destaque
+        DrawTextEx(mainFont, textoRound, (Vector2){posX, posY}, tamanhoFonte, 2, COR_DESTAQUE);
+    }
 }
 
 static void DrawRankings(void) {
