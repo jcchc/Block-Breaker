@@ -40,16 +40,15 @@ static FallingBlock fallingBlocks[BLOCK_COUNT];
 static Font mainFont;
 
 // --- IMPORTANTE: Variáveis Externas ---
-// Estamos dizendo: "Essas variáveis existem no game_logic.c, vou só ler."
 extern Player player;
 extern Ball ball;
-extern Bloco *listaBlocos; // A SUA lista de blocos!
+extern Bloco *listaBlocos;
 extern int pontuacao;
 extern int nivel;
-extern int vidas; // Assumindo que player.vidas ou variável global vidas existe
-extern GameScreen currentState; // MENU, GAMEPLAY, etc.
-extern int fakeRankings[5]; // Se quiser manter o ranking fake
-extern float roundTimer; // NOVA VARIÁVEL EXTERNA PARA O TIMER DO ROUND
+extern int vidas;
+extern GameScreen currentState;
+extern int fakeRankings[5];
+extern float roundTimer;
 
 // ---------------------------------------------------------
 //               FUNÇÕES INTERNAS (Auxiliares)
@@ -63,7 +62,6 @@ static void InitMenuBlocks(void) {
     }
 }
 
-// Atualiza apenas a animação do fundo (isso não é lógica de jogo, é efeito visual)
 static void UpdateMenuBlocks(void) {
     for (int i = 0; i < BLOCK_COUNT; i++) {
         fallingBlocks[i].rect.y += fallingBlocks[i].speed;
@@ -88,7 +86,6 @@ static void DrawTextCentered(const char *text, int y, int fontSize, Color color)
 }
 
 static void DrawButton(const char *text, int y, bool isSelected) {
-    // Desenha botões do menu
     Rectangle btnRect = { (900 - 300) / 2, y, 300, 50 };
     Color corBorda = isSelected ? COR_DESTAQUE : DARKGRAY;
     Color corTexto = isSelected ? COR_DESTAQUE : WHITE;
@@ -98,7 +95,6 @@ static void DrawButton(const char *text, int y, bool isSelected) {
     DrawTextEx(mainFont, text, (Vector2){ btnRect.x + (300 - textW)/2, y + 10 }, 30, 2, corTexto);
 }
 
-// Atualiza e desenha partículas
 static void UpdateDrawParticles(void) {
     for (int i = 0; i < MAX_PARTICLES; i++) {
         if (particles[i].active) {
@@ -119,12 +115,11 @@ static void UpdateDrawParticles(void) {
 // ---------------------------------------------------------
 
 static void DrawMenu(void) {
-    UpdateMenuBlocks(); // Anima o fundo
+    UpdateMenuBlocks();
     DrawMenuBlocks();
     
     DrawTextCentered("BLOCK BREAKER", 100, 80, COR_DESTAQUE);
     
-    // Instruções simples (já que a lógica de seleção está no game_logic)
     DrawTextCentered("Pressione ENTER para Jogar", 300, 30, WHITE);
     DrawTextCentered("Pressione R para Ranking", 350, 20, GRAY);
     DrawTextCentered("Pressione ESC para Sair", 400, 20, GRAY);
@@ -137,17 +132,21 @@ static void DrawGameplay(void) {
     // 2. Desenha Bola
     DrawCircleV(ball.posicao, ball.raio, COR_BOLA);
 
-    // 3. Desenha Blocos (DA SUA LISTA!)
-    Color corDoNivel = CORES_NIVEIS[(nivel - 1) % 5];
-    
+    // 3. Desenha Blocos com CORES ESPECÍFICAS
     Bloco *atual = listaBlocos;
     while (atual != NULL) {
         if (atual->ativo) {
-            // Usa a cor do nível ou uma cor especial baseada no tipo do bloco
-            Color corBloco = corDoNivel;
-            if (atual->tipo > 0) {
-                 // Se quiser variar a cor por linha (tipo 1, 2, 3...)
-                 // corBloco = CORES_NIVEIS[(atual->tipo) % 5];
+            Color corBloco;
+
+            // --- LÓGICA DE CORES PERSONALIZADAS ---
+            if (nivel == 2)      corBloco = GREEN;    // Alien: Verde
+            else if (nivel == 3) corBloco = RAYWHITE; // Fantasma: Branco
+            else if (nivel == 4) corBloco = YELLOW;   // Emoji: Amarelo
+            else if (nivel == 5) corBloco = RED;      // Coração: Vermelho
+            else if (nivel == 6) corBloco = BLUE;     // Seta: Azul
+            else {
+                // Para Nível 1 e Sobrevivência (7+), usa o ciclo de cores padrão
+                corBloco = CORES_NIVEIS[(nivel - 1) % 5];
             }
             
             DrawRectangleRec(atual->rect, corBloco);
@@ -159,37 +158,29 @@ static void DrawGameplay(void) {
     // 4. Partículas
     UpdateDrawParticles();
 
-    // 5. HUD (Interface do Jogo)
+    // 5. HUD
     DrawText(TextFormat("SCORE: %d", pontuacao), 20, 20, 20, COR_DESTAQUE);
     DrawText(TextFormat("LEVEL: %d", nivel), 450 - 40, 20, 20, WHITE);
-    DrawText(TextFormat("LIVES: %d", player.vidas), 900 - 120, 20, 20, RED);
+    DrawText(TextFormat("LIVES: %d", vidas), 900 - 120, 20, 20, RED);
 
-    // 6. OVERLAY DO ROUND (Aparece no início de cada round)
+    // 6. OVERLAY DO ROUND
     if (roundTimer > 0) {
-        // Desenha um fundo escurecido semi-transparente
         DrawRectangle(0, 0, 900, 650, (Color){0, 0, 0, 180});
         
-        // Prepara o texto "ROUND X"
-        const char *textoRound = TextFormat("ROUND %d", nivel);
-        int tamanhoFonte = 100;
-        
-        // Calcula a posição centralizada
-        int larguraTexto = MeasureTextEx(mainFont, textoRound, tamanhoFonte, 2).x;
-        int posX = (900 - larguraTexto) / 2;
-        int posY = 250;
-        
-        // Desenha sombra do texto (efeito de profundidade)
-        DrawTextEx(mainFont, textoRound, (Vector2){posX + 4, posY + 4}, tamanhoFonte, 2, BLACK);
-        
-        // Desenha o texto principal em destaque
-        DrawTextEx(mainFont, textoRound, (Vector2){posX, posY}, tamanhoFonte, 2, COR_DESTAQUE);
+        if (nivel >= 7) {
+            DrawTextCentered("MODO SOBREVIVENCIA", 250, 50, RED);
+            DrawTextCentered("BOA SORTE...", 350, 30, WHITE);
+        } 
+        else {
+            DrawTextCentered(TextFormat("ROUND %d", nivel), 250, 60, COR_DESTAQUE);
+            DrawTextCentered("PREPARE-SE...", 350, 30, WHITE);
+        }
     }
 }
 
 static void DrawRankings(void) {
-    DrawMenuBlocks(); // Fundo
+    DrawMenuBlocks();
     DrawTextCentered("TOP SCORES", 80, 60, COR_DESTAQUE);
-    // Desenha o ranking fake (extern)
     for (int i = 0; i < 5; i++) {
         DrawTextCentered(TextFormat("%d.  %05d", i + 1, fakeRankings[i]), 200 + (i * 50), 40, WHITE);
     }
@@ -197,8 +188,8 @@ static void DrawRankings(void) {
 }
 
 static void DrawGameOver(void) {
-    DrawGameplay(); // Fundo do jogo congelado
-    DrawRectangle(0, 0, 900, 650, (Color){0, 0, 0, 150}); // Escurece
+    DrawGameplay();
+    DrawRectangle(0, 0, 900, 650, (Color){0, 0, 0, 150});
     
     DrawTextCentered("GAME OVER", 200, 80, RED);
     DrawTextCentered(TextFormat("Final Score: %d", pontuacao), 300, 40, WHITE);
