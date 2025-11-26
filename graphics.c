@@ -119,9 +119,9 @@ static void DrawMenu(void) {
     DrawTextCentered("BLOCK BREAKER", 70, 80, COR_TITULO); 
 
     // Botões
-    DrawArcadeButton(300, "START GAME  [ENTER]", WHITE);
+    DrawArcadeButton(300, "START GAME  [ENTER]", GOLD);
     DrawArcadeButton(370, "RANKING  [R]", GOLD);
-    DrawArcadeButton(440, "EXIT  [ESC]", GRAY);
+    DrawArcadeButton(440, "EXIT  [ESC]", GOLD);
 }
 
 static void DrawGameplay(void) {
@@ -145,7 +145,7 @@ static void DrawGameplay(void) {
     }
     UpdateDrawParticles();
     DrawRectangle(0, 0, 900, 40, (Color){0,0,0,150});
-    DrawText(TextFormat("SCORE %05d", pontuacao), 20, 10, 25, WHITE);
+    DrawText(TextFormat("SCORE %05d", pontuacao), 20, 10, 25, GOLD);
     DrawText(TextFormat("ROUND %02d", nivel), 410, 10, 25, COR_BORDA);
     DrawText(TextFormat("LIVES %d", player.vidas), 780, 10, 25, RED);
 
