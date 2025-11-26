@@ -19,6 +19,14 @@ const Color CORES_NIVEIS[] = {
     { 0, 121, 241, 255 }    
 };
 
+// --- ÁUDIO ---
+static Sound musicaMenu; // Era Music, agora é Sound
+static Sound musicaFase; // Era Music, agora é Sound
+static Sound somBloco;
+static Sound somRebatida;
+static Sound somGameOver;
+static Sound somPerderVida; // <--- ADICIONADO
+
 // --- ESTRUTURAS ---
 #define MAX_PARTICLES 100
 typedef struct {
@@ -178,10 +186,80 @@ static void DrawGameOver(void) {
     DrawTextCentered("[M] MAIN MENU", 500, 25, GRAY);
 }
 
-void InitGraphics(void) { InitMenuBlocks(); }
-void UnloadGraphics(void) {}
-void SpawnExplosion(Vector2 pos, Color color) {}
+// --- FUNÇÕES PÚBLICAS ---
+void InitGraphics(void) {
+    // Vamos carregar o som do BLOCO na variável do MENU para testar
+    musicaMenu = LoadSound("SomMenu.wav");
+    musicaFase = LoadSound("SomFase.wav");
+    somBloco   = LoadSound("SomBloco.wav");
+    somRebatida = LoadSound("SomRebatida.wav");
+    somGameOver = LoadSound("SomGameOver.wav");
+    somPerderVida = LoadSound("SomPerderVida.wav"); // <--- ADICIONADO
+    
+    // Removemos SetMusicVolume para garantir volume máximo
+    
+    for(int i=0; i<MAX_PARTICLES; i++) particles[i].active = false;
+    InitMenuBlocks();
+}
+
+void UnloadGraphics(void) {
+    UnloadSound(musicaMenu);
+    UnloadSound(musicaFase);
+    UnloadSound(somBloco);
+    UnloadSound(somRebatida);
+    UnloadSound(somGameOver);
+    UnloadSound(somPerderVida); // <--- ADICIONADO
+}
+
+void SpawnExplosion(Vector2 pos, Color color) {
+    int count = 0;
+    for (int i = 0; i < MAX_PARTICLES; i++) {
+        if (!particles[i].active) {
+            particles[i].active = true;
+            particles[i].pos = pos;
+            particles[i].vel.x = (float)GetRandomValue(-50, 50) / 10.0f;
+            particles[i].vel.y = (float)GetRandomValue(-50, 50) / 10.0f;
+            particles[i].color = color;
+            particles[i].alpha = 1.0f;
+            particles[i].size = (float)GetRandomValue(3, 6);
+            count++;
+            if (count >= 8) break;
+        }
+    }
+}
+
+// --- API DE SOM ---
+void TocarSomBloco(void) { PlaySound(somBloco); }
+void TocarSomRebatida(void) { PlaySound(somRebatida); }
+void TocarSomGameOver(void) { PlaySound(somGameOver); }
+void TocarSomPerderVida(void) { PlaySound(somPerderVida); } // <--- ADICIONADO
+
 void DrawGameFrame(void) {
+    // --- GERENCIADOR DE MÚSICA (Modo Sound Loop) ---
+    
+    // 1. Se estiver no Menu/Ranking:
+    if (currentState == MENU || currentState == RANKINGS) {
+        // Se a música do menu NÃO estiver tocando, toca ela
+        if (!IsSoundPlaying(musicaMenu)) PlaySound(musicaMenu);
+        
+        // Garante que a música do jogo pare
+        if (IsSoundPlaying(musicaFase)) StopSound(musicaFase);
+    } 
+    // 2. Se estiver Jogando:
+    else if (currentState == GAMEPLAY) {
+        // Se a música da fase NÃO estiver tocando, toca ela
+        if (!IsSoundPlaying(musicaFase)) PlaySound(musicaFase);
+        
+        // Garante que a música do menu pare
+        if (IsSoundPlaying(musicaMenu)) StopSound(musicaMenu);
+    }
+    // 3. Se for Game Over:
+    else if (currentState == GAME_OVER) {
+        StopSound(musicaFase);
+        StopSound(musicaMenu);
+    }
+
+    // --- DESENHA AS TELAS ---
     switch(currentState) {
         case MENU:      DrawMenu();     break;
         case GAMEPLAY:  DrawGameplay(); break;

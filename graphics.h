@@ -16,3 +16,8 @@ void DrawGameFrame(void);
 void SpawnExplosion(Vector2 pos, Color color);
 
 #endif
+// --- FUNÇÕES DE ÁUDIO ---
+void TocarSomBloco(void);
+void TocarSomRebatida(void);
+void TocarSomGameOver(void);
+void TocarSomPerderVida(void);

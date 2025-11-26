@@ -8,6 +8,7 @@ int main(void) {
     // 1. Inicia a janela com tamanho FIXO (900x650)
    
     InitWindow(900, 650, "Block Breaker Final");
+    InitAudioDevice();
     
     // 2. Configurações Importantes
     SetExitKey(KEY_NULL); 
@@ -42,6 +43,7 @@ int main(void) {
     destruirLista(listaBlocos);
     UnloadGraphics();
     CloseWindow();
+    CloseAudioDevice();
     
     return 0;
 }

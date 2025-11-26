@@ -1,6 +1,7 @@
 #include "game_logic.h"
+#include "graphics.h" // Mantivemos isso para o SOM funcionar
 #include <stdlib.h>
-#include <stdio.h> // Necessário para arquivos
+#include <stdio.h> 
 
 Player player;
 Ball ball;
@@ -11,10 +12,10 @@ int nivel = 1;
 int vidas = 3;
 GameScreen currentState = MENU;
 
-// SUA PARTE: Ranking Real (Top 5)
+// Ranking Real (Top 5)
 int topScores[5] = {0, 0, 0, 0, 0}; 
 
-// PARTE DELE: Timers de controle (Câmera lenta e Pausa)
+// Timers de controle
 float roundTimer = 0.0f;
 float respawnTimer = 0.0f;
 
@@ -62,8 +63,10 @@ void IniciarJogo(Player *p, Ball *b, Bloco **l) {
     p->vidas = 3;
 
     b->posicao = (Vector2){ LARGURA_TELA/2, ALTURA_TELA/2 };
-    // Velocidade ajustada do seu amigo
-    b->velocidade = (Vector2){ 3.2f, -3.2f };
+    
+    // --- VELOCIDADE ORIGINAL RESTAURADA (3.2) ---
+    b->velocidade = (Vector2){ 3.2f, -3.2f }; 
+    
     b->raio = 8.0f;
     b->ativa = true;
 
@@ -71,7 +74,6 @@ void IniciarJogo(Player *p, Ball *b, Bloco **l) {
     nivel = 1;
     vidas = 3;
     
-    // Zera os timers dele
     roundTimer = 0.0f;
     respawnTimer = 0.0f;
 
@@ -117,8 +119,8 @@ void AtualizarLogica(Player *p, Ball *b, Bloco **l) {
         }
         return;
     }
-
-    // --- TIMERS (Lógica dele) ---
+  
+    // --- TIMERS ---
     if (roundTimer > 0) {
         roundTimer -= GetFrameTime();
         return;
@@ -137,8 +139,9 @@ void AtualizarLogica(Player *p, Ball *b, Bloco **l) {
 
     float mult = 1.0f + (nivel * 0.1f);
 
-    // Efeito Câmera Lenta no Respawn (Lógica dele)
+    // --- MOVIMENTO ORIGINAL (Com o ajuste do else para não travar) ---
     if (respawnTimer > 0) {
+        // Usa o 0.35f original que você pediu
         b->posicao.x += b->velocidade.x * mult * 0.35f;
         b->posicao.y += b->velocidade.y * mult * 0.35f;
     } else {
@@ -152,6 +155,7 @@ void AtualizarLogica(Player *p, Ball *b, Bloco **l) {
 
     // Colisão Player
     if (CheckCollisionCircleRec(b->posicao, b->raio, p->rect)) {
+        TocarSomRebatida(); // Som mantido
         b->velocidade.y *= -1;
         b->posicao.y = p->rect.y - b->raio - 1;
     }
@@ -161,6 +165,7 @@ void AtualizarLogica(Player *p, Ball *b, Bloco **l) {
     while (atual != NULL) {
         if (atual->ativo) {
             if (CheckCollisionCircleRec(b->posicao, b->raio, atual->rect)) {
+                TocarSomBloco(); // Som mantido
                 b->velocidade.y *= -1;
                 atual->vida--;
                 if (atual->vida <= 0) {
@@ -180,6 +185,8 @@ void AtualizarLogica(Player *p, Ball *b, Bloco **l) {
         *l = gerarBlocos(nivel);
 
         b->posicao = (Vector2){ LARGURA_TELA/2, ALTURA_TELA/2 };
+        
+        // --- VELOCIDADE ORIGINAL (3.2) ---
         b->velocidade = (Vector2){ 3.2f, -3.2f };
 
         roundTimer = 3.0f;
@@ -192,11 +199,17 @@ void AtualizarLogica(Player *p, Ball *b, Bloco **l) {
         vidas = p->vidas;
 
         if (p->vidas <= 0) {
-            SalvarRanking(pontuacao); // Salva arquivo
+            TocarSomGameOver(); // Som mantido
+            SalvarRanking(pontuacao); 
             currentState = GAME_OVER;
         } else {
+            TocarSomPerderVida(); // Som mantido
+            
             b->posicao = (Vector2){ LARGURA_TELA/2, ALTURA_TELA/2 };
+            
+            // --- VELOCIDADE ORIGINAL (3.2) ---
             b->velocidade = (Vector2){ 3.2f, -3.2f };
+            
             respawnTimer = 1.5f;
         }
     }
