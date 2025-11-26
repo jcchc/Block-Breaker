@@ -1,25 +1,25 @@
 #include "raylib.h"
 #include "graphics.h"
-#include "game_logic.h" // Para enxergar Player, Ball, GameScreen
-#include "blocks.h"     // Para enxergar Bloco
-#include <stdio.h>      // Para TextFormat
+#include "game_logic.h" 
+#include "blocks.h"     
+#include <stdio.h>      
 
-// --- CONFIGURAÇÕES VISUAIS ---
+// --- CORES EXATAS DO SEU GRUPO ---
+const Color COR_FUNDO      = { 10, 10, 15, 255 };      
+const Color COR_BOTAO      = { 20, 20, 80, 200 };      
+const Color COR_BORDA      = { 0, 200, 255, 255 };     
+const Color COR_TITULO     = { 255, 200, 0, 255 };     
+const Color COR_TEXTO      = { 255, 255, 255, 255 };   
+
 const Color CORES_NIVEIS[] = {
-    { 65, 105, 225, 255 },  // Round 1: Azul Royal
-    { 50, 205, 50, 255 },   // Round 2: Verde Lima
-    { 255, 165, 0, 255 },   // Round 3: Laranja
-    { 148, 0, 211, 255 },   // Round 4: Roxo Escuro
-    { 220, 20, 60, 255 }    // Round 5+: Vermelho Carmesim
+    { 230, 41, 55, 255 },   
+    { 255, 161, 0, 255 },   
+    { 253, 249, 0, 255 },   
+    { 0, 228, 48, 255 },    
+    { 0, 121, 241, 255 }    
 };
 
-const Color COR_FUNDO      = { 20, 20, 30, 255 };
-const Color COR_BOLA       = { 245, 245, 245, 255 };
-const Color COR_JOGADOR    = { 200, 200, 200, 255 };
-const Color COR_BOTAO      = { 40, 40, 80, 255 };
-const Color COR_DESTAQUE   = { 255, 215, 0, 255 };
-
-// --- SISTEMA DE PARTÍCULAS (Visual) ---
+// --- ESTRUTURAS ---
 #define MAX_PARTICLES 100
 typedef struct {
     Vector2 pos;
@@ -32,14 +32,11 @@ typedef struct {
 
 static Particle particles[MAX_PARTICLES];
 
-// --- FUNDO ANIMADO DO MENU ---
-#define BLOCK_COUNT 25 
+#define BLOCK_COUNT 30
 typedef struct { Rectangle rect; Color color; float speed; } FallingBlock;
 static FallingBlock fallingBlocks[BLOCK_COUNT];
 
-static Font mainFont;
-
-// --- IMPORTANTE: Variáveis Externas ---
+// --- EXTERNS ---
 extern Player player;
 extern Ball ball;
 extern Bloco *listaBlocos;
@@ -47,18 +44,15 @@ extern int pontuacao;
 extern int nivel;
 extern int vidas;
 extern GameScreen currentState;
-extern int fakeRankings[5];
+extern int topScores[5];
 extern float roundTimer;
 
-// ---------------------------------------------------------
-//               FUNÇÕES INTERNAS (Auxiliares)
-// ---------------------------------------------------------
-
+// --- FUNÇÕES AUXILIARES ---
 static void InitMenuBlocks(void) {
     for (int i = 0; i < BLOCK_COUNT; i++) {
-        fallingBlocks[i].rect = (Rectangle){ GetRandomValue(0, 900), GetRandomValue(-600, 0), 40, 40 };
-        fallingBlocks[i].speed = GetRandomValue(2, 5);
-        fallingBlocks[i].color = (Color){ GetRandomValue(50, 150), GetRandomValue(50, 150), 255, 50 };
+        fallingBlocks[i].rect = (Rectangle){ GetRandomValue(0, 900), GetRandomValue(-600, 0), GetRandomValue(20, 50), GetRandomValue(20, 50) };
+        fallingBlocks[i].speed = GetRandomValue(1, 4);
+        fallingBlocks[i].color = (Color){ GetRandomValue(50, 255), GetRandomValue(50, 255), 255, 30 };
     }
 }
 
@@ -72,29 +66,6 @@ static void UpdateMenuBlocks(void) {
     }
 }
 
-static void DrawMenuBlocks(void) {
-    for (int i = 0; i < BLOCK_COUNT; i++) { 
-        DrawRectangleRec(fallingBlocks[i].rect, fallingBlocks[i].color); 
-    }
-}
-
-static void DrawTextCentered(const char *text, int y, int fontSize, Color color) {
-    int textWidth = MeasureTextEx(mainFont, text, fontSize, 2).x;
-    int x = (900 - textWidth) / 2;
-    DrawTextEx(mainFont, text, (Vector2){x + 2, y + 2}, fontSize, 2, BLACK); // Sombra
-    DrawTextEx(mainFont, text, (Vector2){x, y}, fontSize, 2, color);
-}
-
-static void DrawButton(const char *text, int y, bool isSelected) {
-    Rectangle btnRect = { (900 - 300) / 2, y, 300, 50 };
-    Color corBorda = isSelected ? COR_DESTAQUE : DARKGRAY;
-    Color corTexto = isSelected ? COR_DESTAQUE : WHITE;
-    DrawRectangleRec(btnRect, COR_BOTAO);
-    DrawRectangleLinesEx(btnRect, 3, corBorda);
-    int textW = MeasureTextEx(mainFont, text, 30, 2).x;
-    DrawTextEx(mainFont, text, (Vector2){ btnRect.x + (300 - textW)/2, y + 10 }, 30, 2, corTexto);
-}
-
 static void UpdateDrawParticles(void) {
     for (int i = 0; i < MAX_PARTICLES; i++) {
         if (particles[i].active) {
@@ -102,7 +73,6 @@ static void UpdateDrawParticles(void) {
             particles[i].pos.y += particles[i].vel.y;
             particles[i].alpha -= 0.02f;
             if (particles[i].alpha <= 0) particles[i].active = false;
-
             Color finalColor = particles[i].color;
             finalColor.a = (unsigned char)(particles[i].alpha * 255);
             DrawRectangle(particles[i].pos.x, particles[i].pos.y, particles[i].size, particles[i].size, finalColor);
@@ -110,125 +80,107 @@ static void UpdateDrawParticles(void) {
     }
 }
 
-// ---------------------------------------------------------
-//               FUNÇÕES DE DESENHO DE ESTADO
-// ---------------------------------------------------------
+static void DrawTextCentered(const char *text, int y, int fontSize, Color color) {
+    int textWidth = MeasureText(text, fontSize);
+    int x = (900 - textWidth) / 2;
+    DrawText(text, x + 2, y + 2, fontSize, BLACK);
+    DrawText(text, x, y, fontSize, color);
+}
 
+static void DrawArcadeButton(int y, const char* text, Color highlight) {
+    int btnWidth = 350;
+    int btnHeight = 50;
+    int x = (900 - btnWidth) / 2;
+    DrawRectangle(x, y, btnWidth, btnHeight, COR_BOTAO);
+    DrawRectangleLines(x, y, btnWidth, btnHeight, COR_BORDA);
+    int textW = MeasureText(text, 25);
+    DrawText(text, x + (btnWidth - textW)/2, y + 12, 25, highlight);
+}
+
+// --- TELAS ---
 static void DrawMenu(void) {
+    ClearBackground(COR_FUNDO);
     UpdateMenuBlocks();
-    DrawMenuBlocks();
+    for (int i = 0; i < BLOCK_COUNT; i++) {
+        DrawRectangleRec(fallingBlocks[i].rect, fallingBlocks[i].color);
+    }
     
-    DrawTextCentered("BLOCK BREAKER", 100, 80, COR_DESTAQUE);
-    
-    DrawTextCentered("Pressione ENTER para Jogar", 300, 30, WHITE);
-    DrawTextCentered("Pressione R para Ranking", 350, 20, GRAY);
-    DrawTextCentered("Pressione ESC para Sair", 400, 20, GRAY);
+    // Título
+    DrawTextCentered("BLOCK BREAKER", 80, 80, RED);   
+    DrawTextCentered("BLOCK BREAKER", 75, 80, BLUE);  
+    DrawTextCentered("BLOCK BREAKER", 70, 80, COR_TITULO); 
+
+    // Botões
+    DrawArcadeButton(300, "START GAME  [ENTER]", WHITE);
+    DrawArcadeButton(370, "RANKING  [R]", GOLD);
+    DrawArcadeButton(440, "EXIT  [ESC]", GRAY);
 }
 
 static void DrawGameplay(void) {
-    // 1. Desenha Player
-    DrawRectangleRec(player.rect, COR_JOGADOR);
-    
-    // 2. Desenha Bola
-    DrawCircleV(ball.posicao, ball.raio, COR_BOLA);
+    ClearBackground(COR_FUNDO);
+    DrawRectangleRec(player.rect, BLUE);
+    DrawRectangleLinesEx(player.rect, 2, SKYBLUE);
+    DrawRectangle(player.rect.x, player.rect.y+5, 10, 10, RED);
+    DrawRectangle(player.rect.x+player.rect.width-10, player.rect.y+5, 10, 10, RED);
 
-    // 3. Desenha Blocos com CORES ESPECÍFICAS
+    DrawCircleV(ball.posicao, ball.raio, WHITE);
+
     Bloco *atual = listaBlocos;
     while (atual != NULL) {
         if (atual->ativo) {
-            Color corBloco;
-
-            // --- LÓGICA DE CORES PERSONALIZADAS ---
-            if (nivel == 2)      corBloco = GREEN;    // Alien: Verde
-            else if (nivel == 3) corBloco = RAYWHITE; // Fantasma: Branco
-            else if (nivel == 4) corBloco = YELLOW;   // Emoji: Amarelo
-            else if (nivel == 5) corBloco = RED;      // Coração: Vermelho
-            else if (nivel == 6) corBloco = BLUE;     // Seta: Azul
-            else {
-                // Para Nível 1 e Sobrevivência (7+), usa o ciclo de cores padrão
-                corBloco = CORES_NIVEIS[(nivel - 1) % 5];
-            }
-            
-            DrawRectangleRec(atual->rect, corBloco);
-            DrawRectangleLinesEx(atual->rect, 2, BLACK); 
+            int indiceCor = (atual->tipo > 0) ? (atual->tipo - 1) % 5 : (nivel - 1) % 5;
+            DrawRectangleRec(atual->rect, CORES_NIVEIS[indiceCor]);
+            DrawRectangleLinesEx(atual->rect, 2, BLACK);
+            DrawRectangle(atual->rect.x+2, atual->rect.y+2, atual->rect.width-4, 5, (Color){255,255,255,80});
         }
         atual = atual->prox;
     }
-
-    // 4. Partículas
     UpdateDrawParticles();
+    DrawRectangle(0, 0, 900, 40, (Color){0,0,0,150});
+    DrawText(TextFormat("SCORE %05d", pontuacao), 20, 10, 25, WHITE);
+    DrawText(TextFormat("ROUND %02d", nivel), 410, 10, 25, COR_BORDA);
+    DrawText(TextFormat("LIVES %d", player.vidas), 780, 10, 25, RED);
 
-    // 5. HUD
-    DrawText(TextFormat("SCORE: %d", pontuacao), 20, 20, 20, COR_DESTAQUE);
-    DrawText(TextFormat("LEVEL: %d", nivel), 450 - 40, 20, 20, WHITE);
-    DrawText(TextFormat("LIVES: %d", vidas), 900 - 120, 20, 20, RED);
-
-    // 6. OVERLAY DO ROUND
     if (roundTimer > 0) {
-        DrawRectangle(0, 0, 900, 650, (Color){0, 0, 0, 180});
-        
-        if (nivel >= 7) {
-            DrawTextCentered("MODO SOBREVIVENCIA", 250, 50, RED);
-            DrawTextCentered("BOA SORTE...", 350, 30, WHITE);
-        } 
-        else {
-            DrawTextCentered(TextFormat("ROUND %d", nivel), 250, 60, COR_DESTAQUE);
-            DrawTextCentered("PREPARE-SE...", 350, 30, WHITE);
-        }
+        DrawRectangle(0, 250, 900, 100, (Color){0,0,0,200});
+        DrawTextCentered(TextFormat("ROUND %d", nivel), 270, 40, COR_TITULO);
+        DrawTextCentered("READY!", 320, 30, WHITE);
     }
 }
 
 static void DrawRankings(void) {
-    DrawMenuBlocks();
-    DrawTextCentered("TOP SCORES", 80, 60, COR_DESTAQUE);
+    ClearBackground(COR_FUNDO);
+    UpdateMenuBlocks();
+    for (int i = 0; i < BLOCK_COUNT; i++) DrawRectangleRec(fallingBlocks[i].rect, fallingBlocks[i].color);
+
+    DrawRectangle(200, 50, 500, 550, (Color){0, 0, 0, 230});
+    DrawRectangleLines(200, 50, 500, 550, COR_BORDA);
+    DrawTextCentered("TOP SCORES", 80, 50, COR_TITULO);
+
     for (int i = 0; i < 5; i++) {
-        DrawTextCentered(TextFormat("%d.  %05d", i + 1, fakeRankings[i]), 200 + (i * 50), 40, WHITE);
+        int yPos = 180 + (i * 60);
+        Color c = (i == 0) ? COR_TITULO : WHITE;
+        DrawRectangle(220, yPos, 460, 40, (Color){255,255,255,10});
+        DrawText(TextFormat("#%d", i + 1), 240, yPos + 5, 30, c);
+        if (topScores[i] == 0) DrawText("-------", 480, yPos + 5, 30, GRAY);
+        else DrawText(TextFormat("%06d", topScores[i]), 480, yPos + 5, 30, c);
     }
-    DrawTextCentered("Pressione ESC para voltar", 550, 20, GRAY);
+    DrawTextCentered("PRESS [ESC] TO RETURN", 560, 20, GRAY);
 }
 
 static void DrawGameOver(void) {
-    DrawGameplay();
-    DrawRectangle(0, 0, 900, 650, (Color){0, 0, 0, 150});
-    
-    DrawTextCentered("GAME OVER", 200, 80, RED);
-    DrawTextCentered(TextFormat("Final Score: %d", pontuacao), 300, 40, WHITE);
-    DrawTextCentered("Pressione [R] para Reiniciar", 450, 20, GRAY);
+    DrawGameplay(); 
+    DrawRectangle(0, 0, 900, 650, (Color){0, 0, 0, 200}); 
+    DrawTextCentered("GAME OVER", 150, 80, RED);
+    DrawArcadeButton(300, TextFormat("SCORE: %d", pontuacao), WHITE);
+    if (pontuacao > 0 && pontuacao >= topScores[4]) DrawTextCentered("NEW HIGH SCORE!", 260, 30, COR_TITULO);
+    DrawTextCentered("[R] TRY AGAIN", 450, 25, COR_BORDA);
+    DrawTextCentered("[M] MAIN MENU", 500, 25, GRAY);
 }
 
-// ---------------------------------------------------------
-//               FUNÇÕES PÚBLICAS (API)
-// ---------------------------------------------------------
-
-void InitGraphics(void) {
-    if (FileExists("font.ttf")) mainFont = LoadFont("font.ttf");
-    else mainFont = GetFontDefault();
-    
-    for(int i=0; i<MAX_PARTICLES; i++) particles[i].active = false;
-    InitMenuBlocks();
-}
-
-void UnloadGraphics(void) {
-    UnloadFont(mainFont);
-}
-
-void SpawnExplosion(Vector2 pos, Color color) {
-    int count = 0;
-    for (int i = 0; i < MAX_PARTICLES; i++) {
-        if (!particles[i].active) {
-            particles[i].active = true;
-            particles[i].pos = pos;
-            particles[i].vel.x = (float)GetRandomValue(-50, 50) / 10.0f;
-            particles[i].vel.y = (float)GetRandomValue(-50, 50) / 10.0f;
-            particles[i].color = color;
-            particles[i].alpha = 1.0f;
-            particles[i].size = (float)GetRandomValue(3, 6);
-            count++;
-            if (count >= 8) break;
-        }
-    }
-}
-
+void InitGraphics(void) { InitMenuBlocks(); }
+void UnloadGraphics(void) {}
+void SpawnExplosion(Vector2 pos, Color color) {}
 void DrawGameFrame(void) {
     switch(currentState) {
         case MENU:      DrawMenu();     break;
