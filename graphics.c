@@ -136,15 +136,28 @@ static void DrawGameplay(void) {
         atual = atual->prox;
     }
     UpdateDrawParticles();
+    
     DrawRectangle(0, 0, 900, 40, (Color){0,0,0,150});
     DrawText(TextFormat("SCORE %05d", pontuacao), 20, 10, 25, GOLD);
-    DrawText(TextFormat("ROUND %02d", nivel), 410, 10, 25, COR_BORDA);
+    
+    if (nivel >= 7) {
+        DrawText("SURVIVAL", 390, 10, 25, MAGENTA);
+    } else {
+        DrawText(TextFormat("ROUND %02d", nivel), 410, 10, 25, COR_BORDA);
+    }
+
     DrawText(TextFormat("LIVES %d", player.vidas), 780, 10, 25, RED);
 
     if (roundTimer > 0) {
         DrawRectangle(0, 250, 900, 100, (Color){0,0,0,200});
-        DrawTextCentered(TextFormat("ROUND %d", nivel), 270, 40, COR_TITULO);
-        DrawTextCentered("READY!", 320, 30, WHITE);
+        
+        if (nivel >= 7) {
+            DrawTextCentered("SURVIVAL MODE", 270, 40, MAGENTA);
+            DrawTextCentered("INFINITE STAGE", 320, 20, WHITE);
+        } else {
+            DrawTextCentered(TextFormat("ROUND %d", nivel), 270, 40, COR_TITULO);
+            DrawTextCentered("READY!", 320, 30, WHITE);
+        }
     }
 }
 
@@ -181,7 +194,7 @@ static void DrawGameOver(void) {
 void InitGraphics(void) {
     musicaMenu = LoadSound("SomMenu.wav");
     musicaFase = LoadSound("SomFase.wav");
-    somBloco = LoadSound("SomBloco.wav");
+    somBloco   = LoadSound("SomBloco.wav");
     somRebatida = LoadSound("SomRebatida.wav");
     somGameOver = LoadSound("SomGameOver.wav");
     somPerderVida = LoadSound("SomPerderVida.wav");
