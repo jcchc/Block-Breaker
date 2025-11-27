@@ -235,7 +235,7 @@ void TocarSomGameOver(void) { PlaySound(somGameOver); }
 void TocarSomPerderVida(void) { PlaySound(somPerderVida); } // <--- ADICIONADO
 
 void DrawGameFrame(void) {
-    // --- GERENCIADOR DE MÚSICA (Modo Sound Loop) ---
+    // --- GERENCIADOR DE MÚSICA (Modo Sound Loop) -----
     
     // 1. Se estiver no Menu/Ranking:
     if (currentState == MENU || currentState == RANKINGS) {

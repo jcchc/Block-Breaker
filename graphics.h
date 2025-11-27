@@ -1,23 +1,32 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
-#include "raylib.h" // <--- ADICIONE ESTA LINHA (Resolve o erro de Vector2 e Color)
+#include "raylib.h"
 
-// Inicializa fontes, texturas e sistemas de partículas
+// --- GERENCIAMENTO DE RECURSOS VISUAIS ---
+
+// Inicializa fontes, texturas, sons e sistemas de partículas
+// Deve ser chamada após InitWindow() e InitAudioDevice()
 void InitGraphics(void);
 
-// Descarrega da memória ao fechar o jogo
+// Descarrega todos os recursos da memória (Unload)
+// Deve ser chamada antes de CloseWindow()
 void UnloadGraphics(void);
 
-// Função principal que desenha o quadro atual
+// --- RENDERIZAÇÃO ---
+
+// Função principal de desenho (Máquina de Estados de Visualização)
+// Seleciona o que desenhar com base no currentState (Menu, Gameplay, etc)
 void DrawGameFrame(void);
 
-// Função para criar explosão
+// Cria um efeito visual de explosão na posição especificada
 void SpawnExplosion(Vector2 pos, Color color);
 
+// --- API DE ÁUDIO ---
+
+void TocarSomBloco(void);      // Colisão Bola x Bloco
+void TocarSomRebatida(void);   // Colisão Bola x Player
+void TocarSomGameOver(void);   // Fim de jogo (Vidas <= 0)
+void TocarSomPerderVida(void); // Perda de vida parcial
+
 #endif
-// --- FUNÇÕES DE ÁUDIO ---
-void TocarSomBloco(void);
-void TocarSomRebatida(void);
-void TocarSomGameOver(void);
-void TocarSomPerderVida(void);
