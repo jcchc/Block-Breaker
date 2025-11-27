@@ -77,13 +77,11 @@ make
 ./jogo_final
 ```
 Compilando no MacOS
->>>>>>> 51ac793be90819b61d18cea3e2c5693fd7c63dc2
 
 ```
 gcc *.c -o jogo_final -lraylib -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo
 
 ./jogo_final
-
 ```
 ## 🕹️ Instruções do Jogo
 
