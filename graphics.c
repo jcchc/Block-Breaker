@@ -4,7 +4,6 @@
 #include "blocks.h"     
 #include <stdio.h>      
 
-// --- CORES EXATAS DO SEU GRUPO ---
 const Color COR_FUNDO      = { 10, 10, 15, 255 };      
 const Color COR_BOTAO      = { 20, 20, 80, 200 };      
 const Color COR_BORDA      = { 0, 200, 255, 255 };     
@@ -19,7 +18,13 @@ const Color CORES_NIVEIS[] = {
     { 0, 121, 241, 255 }    
 };
 
-// --- ESTRUTURAS ---
+static Sound musicaMenu;
+static Sound musicaFase;
+static Sound somBloco;
+static Sound somRebatida;
+static Sound somGameOver;
+static Sound somPerderVida;
+
 #define MAX_PARTICLES 100
 typedef struct {
     Vector2 pos;
@@ -36,7 +41,6 @@ static Particle particles[MAX_PARTICLES];
 typedef struct { Rectangle rect; Color color; float speed; } FallingBlock;
 static FallingBlock fallingBlocks[BLOCK_COUNT];
 
-// --- EXTERNS ---
 extern Player player;
 extern Ball ball;
 extern Bloco *listaBlocos;
@@ -47,7 +51,6 @@ extern GameScreen currentState;
 extern int topScores[5];
 extern float roundTimer;
 
-// --- FUNÇÕES AUXILIARES ---
 static void InitMenuBlocks(void) {
     for (int i = 0; i < BLOCK_COUNT; i++) {
         fallingBlocks[i].rect = (Rectangle){ GetRandomValue(0, 900), GetRandomValue(-600, 0), GetRandomValue(20, 50), GetRandomValue(20, 50) };
@@ -97,7 +100,6 @@ static void DrawArcadeButton(int y, const char* text, Color highlight) {
     DrawText(text, x + (btnWidth - textW)/2, y + 12, 25, highlight);
 }
 
-// --- TELAS ---
 static void DrawMenu(void) {
     ClearBackground(COR_FUNDO);
     UpdateMenuBlocks();
@@ -105,12 +107,10 @@ static void DrawMenu(void) {
         DrawRectangleRec(fallingBlocks[i].rect, fallingBlocks[i].color);
     }
     
-    // Título
     DrawTextCentered("BLOCK BREAKER", 80, 80, RED);   
     DrawTextCentered("BLOCK BREAKER", 75, 80, BLUE);  
     DrawTextCentered("BLOCK BREAKER", 70, 80, COR_TITULO); 
 
-    // Botões
     DrawArcadeButton(300, "START GAME  [ENTER]", GOLD);
     DrawArcadeButton(370, "RANKING  [R]", GOLD);
     DrawArcadeButton(440, "EXIT  [ESC]", GOLD);
@@ -136,36 +136,15 @@ static void DrawGameplay(void) {
         atual = atual->prox;
     }
     UpdateDrawParticles();
-    
-    // HUD (Barra Superior)
     DrawRectangle(0, 0, 900, 40, (Color){0,0,0,150});
     DrawText(TextFormat("SCORE %05d", pontuacao), 20, 10, 25, GOLD);
-    
-    // --- ALTERAÇÃO AQUI: Lógica do Modo Sobrevivência ---
-    if (nivel >= 7) {
-        // Nível 7 ou mais: Escreve SURVIVAL em Roxo (Magenta)
-        DrawText("SURVIVAL", 390, 10, 25, MAGENTA);
-    } else {
-        // Nível normal: Escreve ROUND XX
-        DrawText(TextFormat("ROUND %02d", nivel), 410, 10, 25, COR_BORDA);
-    }
-    // ----------------------------------------------------
-
+    DrawText(TextFormat("ROUND %02d", nivel), 410, 10, 25, COR_BORDA);
     DrawText(TextFormat("LIVES %d", player.vidas), 780, 10, 25, RED);
 
-    // Overlay de Início de Round
     if (roundTimer > 0) {
         DrawRectangle(0, 250, 900, 100, (Color){0,0,0,200});
-        
-        // --- ALTERAÇÃO AQUI: Mensagem de Tela Cheia ---
-        if (nivel >= 7) {
-            DrawTextCentered("SURVIVAL MODE", 270, 40, MAGENTA);
-            DrawTextCentered("INFINITE STAGE", 320, 20, WHITE);
-        } else {
-            DrawTextCentered(TextFormat("ROUND %d", nivel), 270, 40, COR_TITULO);
-            DrawTextCentered("READY!", 320, 30, WHITE);
-        }
-        // ----------------------------------------------
+        DrawTextCentered(TextFormat("ROUND %d", nivel), 270, 40, COR_TITULO);
+        DrawTextCentered("READY!", 320, 30, WHITE);
     }
 }
 
@@ -199,10 +178,63 @@ static void DrawGameOver(void) {
     DrawTextCentered("[M] MAIN MENU", 500, 25, GRAY);
 }
 
-void InitGraphics(void) { InitMenuBlocks(); }
-void UnloadGraphics(void) {}
-void SpawnExplosion(Vector2 pos, Color color) {}
+void InitGraphics(void) {
+    musicaMenu = LoadSound("SomMenu.wav");
+    musicaFase = LoadSound("SomFase.wav");
+    somBloco   = LoadSound("SomBloco.wav");
+    somRebatida = LoadSound("SomRebatida.wav");
+    somGameOver = LoadSound("SomGameOver.wav");
+    somPerderVida = LoadSound("SomPerderVida.wav");
+    
+    for(int i=0; i<MAX_PARTICLES; i++) particles[i].active = false;
+    InitMenuBlocks();
+}
+
+void UnloadGraphics(void) {
+    UnloadSound(musicaMenu);
+    UnloadSound(musicaFase);
+    UnloadSound(somBloco);
+    UnloadSound(somRebatida);
+    UnloadSound(somGameOver);
+    UnloadSound(somPerderVida);
+}
+
+void SpawnExplosion(Vector2 pos, Color color) {
+    int count = 0;
+    for (int i = 0; i < MAX_PARTICLES; i++) {
+        if (!particles[i].active) {
+            particles[i].active = true;
+            particles[i].pos = pos;
+            particles[i].vel.x = (float)GetRandomValue(-50, 50) / 10.0f;
+            particles[i].vel.y = (float)GetRandomValue(-50, 50) / 10.0f;
+            particles[i].color = color;
+            particles[i].alpha = 1.0f;
+            particles[i].size = (float)GetRandomValue(3, 6);
+            count++;
+            if (count >= 8) break;
+        }
+    }
+}
+
+void TocarSomBloco(void) { PlaySound(somBloco); }
+void TocarSomRebatida(void) { PlaySound(somRebatida); }
+void TocarSomGameOver(void) { PlaySound(somGameOver); }
+void TocarSomPerderVida(void) { PlaySound(somPerderVida); }
+
 void DrawGameFrame(void) {
+    if (currentState == MENU || currentState == RANKINGS) {
+        if (!IsSoundPlaying(musicaMenu)) PlaySound(musicaMenu);
+        if (IsSoundPlaying(musicaFase)) StopSound(musicaFase);
+    } 
+    else if (currentState == GAMEPLAY) {
+        if (!IsSoundPlaying(musicaFase)) PlaySound(musicaFase);
+        if (IsSoundPlaying(musicaMenu)) StopSound(musicaMenu);
+    }
+    else if (currentState == GAME_OVER) {
+        StopSound(musicaFase);
+        StopSound(musicaMenu);
+    }
+
     switch(currentState) {
         case MENU:      DrawMenu();     break;
         case GAMEPLAY:  DrawGameplay(); break;
